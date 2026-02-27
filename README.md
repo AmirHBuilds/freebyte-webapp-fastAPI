@@ -15,7 +15,7 @@ docker compose up --build
 ```
 
 Then open:
-- App: http://localhost:8000/home
+- App: http://localhost:8005/home
 
 ### Stop
 
@@ -31,7 +31,7 @@ docker compose down -v
 
 ## What runs
 
-- `web`: FastAPI app (`uvicorn main:app --host 0.0.0.0 --port 8000`)
+- `web`: FastAPI app (`uvicorn main:app --host 0.0.0.0 --port 8005`)
 - `db`: PostgreSQL 16
 
 `DATABASE_URL` is injected automatically by `docker-compose.yml`:
