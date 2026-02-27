@@ -8,4 +8,4 @@ fi
 # Run database migrations if alembic is configured.
 alembic upgrade head || echo "Skipping alembic upgrade (failed or not configured yet)."
 
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+exec uvicorn main:app --host 0.0.0.0 --port 8005
