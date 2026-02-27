@@ -33,7 +33,6 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    private_token: str
 
 class UserLoggin(UserBase):
     email: str

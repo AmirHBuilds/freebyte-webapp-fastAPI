@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 import schemas, crud, private, models
 import jwt, pytz, requests
 from datetime import datetime
-from auth import SECRET_KEY, REFRESH_SECRET_KEY, create_access_token, create_refresh_token, verify_api_token
+from auth import SECRET_KEY, REFRESH_SECRET_KEY, create_access_token, create_refresh_token
 from utilities import (decode_access_token, connect_to_server_instance, get_db, token_black_list,
                         calculate_total_price, report_status_to_admin, remove_service_from_server)
 from payment_init import create_invoice, verify_iran_payment, verify_cryptomus_payment
@@ -106,9 +106,6 @@ async def sign_up(request: Request):
 async def create_user(user: schemas.UserCreate, response: Response, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, user.email)
     if db_user: raise HTTPException(400, 'email already registred.')
-
-    if not await verify_api_token(user.private_token):
-        return {'error': 'token not match!'}
 
     create_user_db = crud.create_user(db, user)
     crud.create_cart(db, create_user_db.user_id )
