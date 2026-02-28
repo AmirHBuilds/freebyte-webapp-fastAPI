@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class ProductBase(BaseModel):
     server_address: str
@@ -16,7 +16,7 @@ class ProductCreate(ProductBase):
 
 class Product(ProductBase):
     product_id: int
-    class Config: orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 
@@ -40,7 +40,7 @@ class UserLoggin(UserBase):
 
 class User(UserBase):
     user_id: int
-    class Config: orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PurchaseBase(BaseModel):
@@ -73,7 +73,7 @@ class CreateConfigInDB(BaseModel):
 
 class ClientConfig(PurchaseBase):
     db_purchase_id: int
-    class Config: orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UpgradeCustomService(BaseModel):
     username: str

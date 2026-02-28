@@ -115,3 +115,17 @@ h1, h2, h3, h4, h5, h6, .fw-medium, .fw-bold, .heading-section {
 @media (max-width: 768px) {
   .btn { margin-bottom: 8px; }
 }
+
+
+.navbar-brand, .navbar-brand span, .navbar-brand .text-1000 { color: #e8ecff !important; }
+.navbar-toggler { border-color: rgba(232,236,255,0.35) !important; }
+.navbar-toggler-icon { filter: invert(1) brightness(1.6); }
+
+.auth-card { max-width: 460px; margin: 0 auto; padding: 2rem !important; }
+.auth-badge { display: inline-block; margin: 0 auto 0.75rem; padding: 6px 14px; border-radius: 999px; background: rgba(124, 92, 255, 0.2); color: #c8d3ff; font-size: 0.85rem; }
+.auth-title { text-align: center; margin-bottom: 0.45rem; }
+.auth-subtitle { text-align: center; color: #aebbe5 !important; margin-bottom: 1.2rem; }
+
+.password-rules { font-size: 0.85rem; margin-top: -6px; margin-bottom: 14px; padding: 10px 12px; border: 1px dashed rgba(174, 187, 229, 0.35); border-radius: 10px; background: rgba(255, 255, 255, 0.03); }
+.password-rules > div { color: #b9c4e8; margin-bottom: 4px; }
+.password-rules > div.ok { color: #70e79c; }

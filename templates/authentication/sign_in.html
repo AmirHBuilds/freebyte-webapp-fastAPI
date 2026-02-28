@@ -13,14 +13,13 @@
 <section class="ftco-section">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-6 text-center mb-5">
-                <h2 class="heading-section vazir_medium">ثبت نام در سایت</h2>
-            </div>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-4">
-                <div class="login-wrap p-0">
-                    <p class="mb-4 text-center vazir_regular" style="font-size: 23px;">از قبل اکانت دارید؟<a href="/loggin/" class="vazir_regular" style="font-size: 21px;"> ورود</a></p>
+            <div class="col-md-7 col-lg-5">
+                <div class="login-wrap auth-card">
+                    <div class="auth-badge vazir_medium">ایجاد حساب جدید</div>
+                    <h3 class="auth-title vazir_medium">ثبت نام سریع و امن</h3>
+                    <p class="auth-subtitle vazir_regular">فقط با ایمیل و رمزعبور قوی حساب خود را بسازید.</p>
+                    <p class="mb-4 text-center vazir_regular" style="font-size: 18px;">از قبل اکانت دارید؟<a href="/loggin/" class="vazir_regular" style="font-size: 18px;"> ورود</a></p>
+
                     <form id="signup-form">
                         <div class="form-group">
                             <input type="text" class="form-control vazir_regular" name="name" placeholder="نام شما">
@@ -29,9 +28,18 @@
                             <input type="email" class="form-control vazir_regular" name="email" placeholder="ایمیل" required>
                         </div>
                         <div class="form-group">
-                            <input id="password-field" type="password" class="form-control vazir_regular" name="password" placeholder="رمزعبور" required>
+                            <input id="password-field" type="password" class="form-control vazir_regular" name="password" placeholder="رمزعبور قوی" required>
                             <span toggle="#password-field" class="fa fa-fw fa-eye field-icon toggle-password"></span>
                         </div>
+
+                        <div id="password-rules" class="password-rules vazir_regular">
+                            <div data-rule="length">حداقل 8 کاراکتر</div>
+                            <div data-rule="lower">حداقل یک حرف کوچک (a-z)</div>
+                            <div data-rule="upper">حداقل یک حرف بزرگ (A-Z)</div>
+                            <div data-rule="digit">حداقل یک عدد (0-9)</div>
+                            <div data-rule="special">حداقل یک کاراکتر خاص (!@#$...)</div>
+                        </div>
+
                         <div class="form-group">
                             <button type="submit" class="form-control btn btn-primary submit px-3 vazir_medium">ثبت نام</button>
                         </div>
@@ -39,11 +47,6 @@
                             <p></p>
                         </div>
                     </form>
-                    <p class="w-100 text-center vazir_medium">&mdash; وارد شدن با &mdash;</p>
-<!--                    <div class="social d-flex text-center">-->
-<!--                        <a href="#" style="margin-right: 10px;" class="px-2 py-2 mr-md-1 rounded vazir_regular"><span class="ion-logo-facebook mr-2"></span> گوگل</a>-->
-<!--                        <a href="#" class="px-2 py-2 ml-md-1 rounded vazir_regular"><span class="ion-logo-twitter mr-2"></span> توییتر</a>-->
-<!--                    </div>-->
                 </div>
             </div>
         </div>
@@ -57,8 +60,34 @@
 
 <script>
     const errorMessages = {
-        "email already registred.": ".ایمیل از قبل وجود دارد"
+        "email already registred.": ".ایمیل از قبل وجود دارد",
+        "password is too weak. use upper/lowercase letters, number and special character with min 8 chars.": ".رمزعبور ضعیف است. شرایط قدرت رمز را رعایت کنید"
     };
+
+    const passwordInput = document.getElementById('password-field');
+    const rules = {
+        length: value => value.length >= 8,
+        lower: value => /[a-z]/.test(value),
+        upper: value => /[A-Z]/.test(value),
+        digit: value => /\d/.test(value),
+        special: value => /[^A-Za-z0-9]/.test(value),
+    };
+
+    function validateStrongPassword(value) {
+        return Object.values(rules).every(check => check(value));
+    }
+
+    function renderPasswordRules(value) {
+        Object.entries(rules).forEach(([name, check]) => {
+            const element = document.querySelector(`#password-rules [data-rule="${name}"]`);
+            if (!element) return;
+            element.classList.toggle('ok', check(value));
+        });
+    }
+
+    passwordInput.addEventListener('input', (event) => {
+        renderPasswordRules(event.target.value);
+    });
 
     document.getElementById('signup-form').addEventListener('submit', function(event) {
         event.preventDefault();
@@ -66,6 +95,14 @@
         const form = event.target;
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
+
+        const errorMessageElement = document.getElementById('error-message');
+        if (!validateStrongPassword(data.password || '')) {
+            errorMessageElement.style.display = 'block';
+            errorMessageElement.style.color = 'orange';
+            errorMessageElement.querySelector('p').textContent = '.رمزعبور باید قوی باشد (راهنما را کامل کنید)';
+            return;
+        }
 
         fetch('/sign-up/', {
             method: 'POST',
@@ -76,17 +113,14 @@
         })
         .then(response => response.json().then(data => ({status: response.status, body: data})))
         .then(({status, body}) => {
-            const errorMessageElement = document.getElementById('error-message');
             errorMessageElement.style.display = 'block';
             if (status === 200) {
-
                 errorMessageElement.style.color = 'lime';
                 errorMessageElement.querySelector('p').textContent = '...ثبت نام موفقیت آمیز بود. در حال انتقال';
                 setTimeout(() => {
                     window.location.href = '/home';
-                }, 2000); // Redirect after 2 seconds
+                }, 1500);
             } else {
-                // Display error message
                 const errorMessage = body.detail || '.خطایی رخ داده است. لطفاً مجدداً تلاش کنید';
                 const translatedErrorMessage = errorMessages[errorMessage] || errorMessage;
                 errorMessageElement.style.color = 'red';
@@ -95,7 +129,6 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            const errorMessageElement = document.getElementById('error-message');
             errorMessageElement.style.display = 'block';
             errorMessageElement.style.color = 'red';
             errorMessageElement.querySelector('p').textContent = '.خطایی رخ داده است. لطفاً مجدداً تلاش کنید';

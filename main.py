@@ -1,4 +1,5 @@
 import logging
+import re
 import sqlalchemy.exc
 from fastapi import FastAPI, Request, Depends, HTTPException, Cookie, Response, Form
 from fastapi.templating import Jinja2Templates
@@ -107,6 +108,10 @@ async def sign_up(request: Request):
 async def create_user(user: schemas.UserCreate, response: Response, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, user.email)
     if db_user: raise HTTPException(400, 'email already registred.')
+
+    strong_password = re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$', user.password)
+    if not strong_password:
+        raise HTTPException(400, 'password is too weak. use upper/lowercase letters, number and special character with min 8 chars.')
 
     create_user_db = crud.create_user(db, user)
     crud.create_cart(db, create_user_db.user_id )

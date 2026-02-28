@@ -4,11 +4,7 @@
 	<title>فری‌بایت | ورود</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-	<!--	<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">-->
-
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-
 	<link rel="stylesheet" href="{{ url_for('static', path='authentication/css/style.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', path='index/my_custom_style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='index/dark_theme.css') }}">
@@ -18,14 +14,12 @@
 <section class="ftco-section">
 	<div class="container">
 		<div class="row justify-content-center">
-			<div class="col-md-6 text-center mb-5">
-				<h2 class="heading-section vazir_medium">ورود به اکانت</h2>
-			</div>
-		</div>
-		<div class="row justify-content-center">
-			<div class="col-md-6 col-lg-4">
-				<div class="login-wrap p-0">
-					<p class="mb-4 text-center vazir_regular" style="font-size: 23px;">هنوز اکانت نساختید؟<a href="/sign-up/" class="vazir_regular" style="font-size: 21px;"> ثبت نام</a></p>
+			<div class="col-md-7 col-lg-5">
+				<div class="login-wrap auth-card">
+					<div class="auth-badge vazir_medium">ورود به حساب</div>
+					<h3 class="auth-title vazir_medium">خوش آمدید</h3>
+					<p class="auth-subtitle vazir_regular">برای ادامه، با ایمیل و رمزعبور خود وارد شوید.</p>
+					<p class="mb-4 text-center vazir_regular" style="font-size: 18px;">هنوز اکانت نساختید؟<a href="/sign-up/" class="vazir_regular" style="font-size: 18px;"> ثبت نام</a></p>
 					<form id="loggin-form">
 						<div class="form-group">
 							<input name="email" type="text" class="form-control vazir_regular" placeholder="ایمیل" required>
@@ -37,26 +31,10 @@
 						<div class="form-group">
 							<button type="submit" class="form-control btn btn-primary submit px-3 vazir_medium">ورود</button>
 						</div>
-						<div class="form-group d-md-flex" style="justify-content: center;">
-							<div class="w-50">
-								<label class="checkbox-wrap checkbox-primary vazir_regular">من را به خاطر بسپار
-									<input type="checkbox" checked>
-									<span class="checkmark"></span>
-								</label>
-							</div>
-							<!--							<div class="w-50 text-md-right vazir_regular">-->
-							<!--								<a href="#" style="color: #fff">فراموشی رمزعبور</a>-->
-							<!--							</div>-->
-						</div>
 					</form>
 					<div class="form-group vazir_medium" id="error-message" style="color: red; display: none; text-align: center;">
 						<p></p>
 					</div>
-					<!--					<p class="w-100 text-center vazir_medium">&mdash; وارد شدن با &mdash;</p>-->
-					<!--					<div class="social d-flex text-center">-->
-					<!--						<a href="#" class="px-2 py-2 mr-md-1 rounded vazir_regular"><span class="ion-logo-facebook mr-2"></span> گوگل</a>-->
-					<!--						<a href="#" class="px-2 py-2 ml-md-1 rounded vazir_regular"><span class="ion-logo-twitter mr-2"></span> توییتر</a>-->
-					<!--					</div>-->
 				</div>
 			</div>
 		</div>
@@ -72,7 +50,6 @@
 	const errorMessages = {
         "email does not exist.": ".این ایمیل وجود ندارد",
         "password is not correct.": ".رمزعبور اشتباه است",
-
     };
 
     document.getElementById('loggin-form').addEventListener('submit', function(event) {
@@ -94,14 +71,13 @@
             const errorMessageElement = document.getElementById('error-message');
             errorMessageElement.style.display = 'block';
             if (status === 200) {
-
                 errorMessageElement.style.color = 'lime';
                 errorMessageElement.querySelector('p').textContent = '...ورود موفقیت آمیز بود. در حال انتقال';
                 setTimeout(() => {
                     window.location.href = '/home';
-                }, 2000);
+                }, 1500);
             } else {
-                const errorMessage = body.detail
+                const errorMessage = body.detail;
                 const translatedErrorMessage = errorMessages[errorMessage] || errorMessage;
                 errorMessageElement.style.color = 'red';
                 errorMessageElement.querySelector('p').textContent = translatedErrorMessage;
@@ -119,4 +95,3 @@
 
 </body>
 </html>
-
