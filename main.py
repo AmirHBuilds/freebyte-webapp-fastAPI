@@ -1,18 +1,20 @@
 import logging
+import re
 import sqlalchemy.exc
 from fastapi import FastAPI, Request, Depends, HTTPException, Cookie, Response, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-import schemas, crud, private, models
+import schemas, crud, models
 import jwt, pytz, requests
 from datetime import datetime
-from auth import SECRET_KEY, REFRESH_SECRET_KEY, create_access_token, create_refresh_token, verify_api_token
+from auth import create_access_token, create_refresh_token
 from utilities import (decode_access_token, connect_to_server_instance, get_db, token_black_list,
                         calculate_total_price, report_status_to_admin, remove_service_from_server)
 from payment_init import create_invoice, verify_iran_payment, verify_cryptomus_payment
 from vpn_server_operation import get_server_details, upgrade_service_for_user, create_service_in_servers
+from settings import settings
 
 
 verification_codes = {}
@@ -28,7 +30,7 @@ def refresh_token(request: Request, response: Response, refresh_token_attr: str 
         raise HTTPException(status_code=401, detail="Refresh token is missing")
 
     try:
-        payload = jwt.decode(refresh_token_attr, REFRESH_SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(refresh_token_attr, settings.refresh_secret_key, algorithms=["HS256"])
         email= payload.get("email"),
         if email is None:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -57,7 +59,7 @@ async def authenticate_request(request: Request, call_next):
         get_refresh_token = request.cookies.get("refresh_token")
         if get_refresh_token:
             try:
-                refresh_payload = jwt.decode(get_refresh_token, REFRESH_SECRET_KEY, algorithms=["HS256"])
+                refresh_payload = jwt.decode(get_refresh_token, settings.refresh_secret_key, algorithms=["HS256"])
                 new_access_token = create_access_token(data={"email": refresh_payload.get("email"),
                                                              "name": refresh_payload.get("name"),
                                                              "user_id": refresh_payload.get("user_id")})
@@ -74,7 +76,7 @@ async def authenticate_request(request: Request, call_next):
 
     if token and token not in token_black_list.black_list:
         try:
-            jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            jwt.decode(token, settings.secret_key, algorithms=["HS256"])
             request.state.user = token.encode()
         except jwt.ExpiredSignatureError:
             response = await generate_new_token()
@@ -107,8 +109,9 @@ async def create_user(user: schemas.UserCreate, response: Response, db: Session 
     db_user = crud.get_user_by_email(db, user.email)
     if db_user: raise HTTPException(400, 'email already registred.')
 
-    if not await verify_api_token(user.private_token):
-        return {'error': 'token not match!'}
+    strong_password = re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$', user.password)
+    if not strong_password:
+        raise HTTPException(400, 'password is too weak. use upper/lowercase letters, number and special character with min 8 chars.')
 
     create_user_db = crud.create_user(db, user)
     crud.create_cart(db, create_user_db.user_id )
@@ -445,7 +448,7 @@ async def upgrade_foreign_service(config: schemas.UpgradeCustomService, request:
             cart_id = crud.get_cart(db, user_id)
             connect_to_server_instance.refresh_token()
             traffic, period = config.traffic, config.period
-            calcuate_price = (private.price_per_gb * config.traffic) + (private.price_per_day * config.period)
+            calcuate_price = (settings.price_per_gb * config.traffic) + (settings.price_per_day * config.period)
             username = config.username
 
             default_product = crud.get_first_product(db)
