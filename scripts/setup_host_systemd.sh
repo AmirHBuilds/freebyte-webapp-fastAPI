@@ -34,14 +34,20 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
+# Prefer app/runtime dependency list; fallback to legacy requirements if needed.
+REQUIREMENTS_FILE="$REPO_DIR/requirements.docker.txt"
+if [[ ! -f "$REQUIREMENTS_FILE" ]]; then
+  REQUIREMENTS_FILE="$REPO_DIR/requirements.txt"
+fi
+
 python3 -m venv "$VENV_DIR"
 
-# Some hosts create venv without pip when python3-venv/ensurepip is missing.
 if [[ ! -x "$VENV_DIR/bin/python" ]]; then
   echo "Error: virtualenv python not found at $VENV_DIR/bin/python" >&2
   exit 1
 fi
 
+# Some hosts create venv without pip when python3-venv/ensurepip is missing.
 if ! "$VENV_DIR/bin/python" -m pip --version >/dev/null 2>&1; then
   "$VENV_DIR/bin/python" -m ensurepip --upgrade >/dev/null 2>&1 || true
 fi
@@ -53,10 +59,13 @@ if ! "$VENV_DIR/bin/python" -m pip --version >/dev/null 2>&1; then
 fi
 
 "$VENV_DIR/bin/python" -m pip install --upgrade pip
-"$VENV_DIR/bin/python" -m pip install -r "$REPO_DIR/requirements.txt"
+"$VENV_DIR/bin/python" -m pip install -r "$REQUIREMENTS_FILE"
+
+# Ensure critical runtime tools are present even if requirements drift.
+"$VENV_DIR/bin/python" -m pip install fastapi "uvicorn[standard]" alembic
 
 # Apply DB migrations before service start
-"$VENV_DIR/bin/alembic" upgrade head
+"$VENV_DIR/bin/python" -m alembic upgrade head
 
 $SUDO tee "$UNIT_FILE" >/dev/null <<UNIT
 [Unit]
@@ -68,7 +77,7 @@ Type=simple
 User=$RUN_USER
 WorkingDirectory=$REPO_DIR
 EnvironmentFile=$REPO_DIR/.env
-ExecStart=$VENV_DIR/bin/uvicorn main:app --host $APP_HOST --port $APP_PORT
+ExecStart=$VENV_DIR/bin/python -m uvicorn main:app --host $APP_HOST --port $APP_PORT
 Restart=always
 RestartSec=3
 
@@ -89,3 +98,4 @@ fi
 
 echo ""
 echo "Done. Nginx upstream should target: http://${APP_HOST}:${APP_PORT}"
+echo "Dependencies installed from: $REQUIREMENTS_FILE"

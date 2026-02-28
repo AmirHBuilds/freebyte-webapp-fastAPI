@@ -16,7 +16,7 @@ bash scripts/setup_host_systemd.sh
 
 What this script does:
 1. Creates `.venv-host`
-2. Installs `requirements.txt`
+2. Installs app dependencies (prefers `requirements.docker.txt`, fallback `requirements.txt`)
 3. Runs `alembic upgrade head`
 4. Creates and enables `freebyte-web.service`
 5. Starts Uvicorn on `127.0.0.1:8005` permanently via systemd
