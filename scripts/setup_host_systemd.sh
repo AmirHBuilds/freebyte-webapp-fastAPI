@@ -29,6 +29,11 @@ if [[ ! -f "$REPO_DIR/.env" ]]; then
   exit 1
 fi
 
+# Load env vars for optional host DB override inputs (POSTGRES_* / DATABASE_URL).
+set -a
+source "$REPO_DIR/.env"
+set +a
+
 if ! command -v python3 >/dev/null 2>&1; then
   echo "Error: python3 is not installed." >&2
   exit 1
@@ -64,8 +69,50 @@ fi
 # Ensure critical runtime tools are present even if requirements drift.
 "$VENV_DIR/bin/python" -m pip install fastapi "uvicorn[standard]" alembic
 
+HOST_DATABASE_URL="$(
+  DATABASE_URL="${DATABASE_URL:-}" \
+  POSTGRES_DB="${POSTGRES_DB:-freebyte_app}" \
+  POSTGRES_USER="${POSTGRES_USER:-postgres}" \
+  POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}" \
+  POSTGRES_PORT="${POSTGRES_PORT:-5432}" \
+  python3 - <<'PY'
+import os
+from urllib.parse import urlparse
+
+raw = os.getenv("DATABASE_URL", "").strip()
+postgres_port = os.getenv("POSTGRES_PORT", "5432")
+
+if not raw:
+    user = os.getenv("POSTGRES_USER", "postgres")
+    password = os.getenv("POSTGRES_PASSWORD", "postgres")
+    db = os.getenv("POSTGRES_DB", "freebyte_app")
+    print(f"postgresql://{user}:{password}@127.0.0.1:{postgres_port}/{db}")
+    raise SystemExit(0)
+
+parsed = urlparse(raw)
+host = parsed.hostname or "127.0.0.1"
+if host == "db":
+    host = "127.0.0.1"
+
+port = parsed.port
+if port is None:
+    port = int(postgres_port)
+elif parsed.hostname == "db" and str(port) == "5432" and postgres_port:
+    port = int(postgres_port)
+
+username = parsed.username or os.getenv("POSTGRES_USER", "postgres")
+password = parsed.password or os.getenv("POSTGRES_PASSWORD", "postgres")
+db_name = (parsed.path or "/").lstrip("/") or os.getenv("POSTGRES_DB", "freebyte_app")
+scheme = parsed.scheme or "postgresql"
+
+print(f"{scheme}://{username}:{password}@{host}:{port}/{db_name}")
+PY
+)"
+
+echo "Using host DATABASE_URL: $HOST_DATABASE_URL"
+
 # Apply DB migrations before service start
-"$VENV_DIR/bin/python" -m alembic upgrade head
+DATABASE_URL="$HOST_DATABASE_URL" "$VENV_DIR/bin/python" -m alembic upgrade head
 
 $SUDO tee "$UNIT_FILE" >/dev/null <<UNIT
 [Unit]
@@ -77,6 +124,7 @@ Type=simple
 User=$RUN_USER
 WorkingDirectory=$REPO_DIR
 EnvironmentFile=$REPO_DIR/.env
+Environment=DATABASE_URL=$HOST_DATABASE_URL
 ExecStart=$VENV_DIR/bin/python -m uvicorn main:app --host $APP_HOST --port $APP_PORT
 Restart=always
 RestartSec=3
