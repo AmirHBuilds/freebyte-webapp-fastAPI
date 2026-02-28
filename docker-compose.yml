@@ -43,7 +43,7 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freebyte_app}}
-    command: ["uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8005"]
+    command: command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8005"]
     ports:
       - "${APP_PORT:-8005}:8005"
 
