@@ -19,6 +19,8 @@ if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   fi
 fi
 
+RUN_USER="${SUDO_USER:-$(id -un)}"
+
 cd "$REPO_DIR"
 
 if [[ ! -f "$REPO_DIR/.env" ]]; then
@@ -27,9 +29,31 @@ if [[ ! -f "$REPO_DIR/.env" ]]; then
   exit 1
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: python3 is not installed." >&2
+  exit 1
+fi
+
 python3 -m venv "$VENV_DIR"
-"$VENV_DIR/bin/pip" install --upgrade pip
-"$VENV_DIR/bin/pip" install -r "$REPO_DIR/requirements.txt"
+
+# Some hosts create venv without pip when python3-venv/ensurepip is missing.
+if [[ ! -x "$VENV_DIR/bin/python" ]]; then
+  echo "Error: virtualenv python not found at $VENV_DIR/bin/python" >&2
+  exit 1
+fi
+
+if ! "$VENV_DIR/bin/python" -m pip --version >/dev/null 2>&1; then
+  "$VENV_DIR/bin/python" -m ensurepip --upgrade >/dev/null 2>&1 || true
+fi
+
+if ! "$VENV_DIR/bin/python" -m pip --version >/dev/null 2>&1; then
+  echo "Error: pip is unavailable in the virtualenv." >&2
+  echo "Install OS package 'python3-venv' (and python3-pip if needed), then re-run." >&2
+  exit 1
+fi
+
+"$VENV_DIR/bin/python" -m pip install --upgrade pip
+"$VENV_DIR/bin/python" -m pip install -r "$REPO_DIR/requirements.txt"
 
 # Apply DB migrations before service start
 "$VENV_DIR/bin/alembic" upgrade head
@@ -41,7 +65,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=$(id -un)
+User=$RUN_USER
 WorkingDirectory=$REPO_DIR
 EnvironmentFile=$REPO_DIR/.env
 ExecStart=$VENV_DIR/bin/uvicorn main:app --host $APP_HOST --port $APP_PORT
@@ -58,8 +82,10 @@ $SUDO systemctl enable --now "$SERVICE_NAME"
 $SUDO systemctl --no-pager --full status "$SERVICE_NAME" || true
 
 if command -v curl >/dev/null 2>&1; then
-  echo "\nHealth check:"
+  echo ""
+  echo "Health check:"
   curl -I "http://${APP_HOST}:${APP_PORT}/home" || true
 fi
 
-echo "\nDone. Nginx upstream should target: http://${APP_HOST}:${APP_PORT}"
+echo ""
+echo "Done. Nginx upstream should target: http://${APP_HOST}:${APP_PORT}"
