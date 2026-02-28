@@ -3,8 +3,7 @@ import panel_api
 from database import SessionLocal
 import jwt, aiohttp, pytz, random, string, requests
 from datetime import datetime, timedelta
-from auth import SECRET_KEY
-from private import ADMIN_CHAT_IDs, telegram_bot_token, telegram_thread_id
+from settings import settings
 
 def get_db():
     db = SessionLocal()
@@ -23,7 +22,7 @@ async def decode_access_token(request, all_=False):
     if not request.state.user:
         return
 
-    decode_data = jwt.decode(request.state.user, SECRET_KEY, algorithms=["HS256"])
+    decode_data = jwt.decode(request.state.user, settings.secret_key, algorithms=["HS256"])
     if not all_: return decode_data.get('user_id')
     return decode_data
 
@@ -88,8 +87,8 @@ async def report_status_to_admin(text, status='success', owner=None):
                      f'\nName: {owner.name}')
 
         # telegram_bot_url = f"https://freebyte.click/send_telegram_notification/"
-        telegram_bot_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
-        requests.post(telegram_bot_url, data={'chat_id': ADMIN_CHAT_IDs[0], 'text': text, 'message_thread_id': telegram_thread_id, 'bot_token': telegram_bot_token}, timeout=5)
+        telegram_bot_url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
+        requests.post(telegram_bot_url, data={'chat_id': settings.admin_chat_ids_list[0], 'text': text, 'message_thread_id': settings.telegram_thread_id, 'bot_token': settings.telegram_bot_token}, timeout=5)
     except Exception as e:
         logging.error(f'Failed to send message to ADMIN {e}')
 

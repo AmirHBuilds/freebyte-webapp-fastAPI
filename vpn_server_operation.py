@@ -1,5 +1,6 @@
 import logging
-import crud, private
+import crud
+from settings import settings
 import uuid, pytz, random, string, requests
 from datetime import datetime, timedelta
 from utilities import connect_to_server_instance, traffic_to_gb, report_status_to_admin, second_to_ms
@@ -85,7 +86,7 @@ async def create_service_in_servers(session, purchase, user_id):
     username = (
         f"{''.join(random.choices(string.ascii_lowercase, k=5))}"
     )
-    calcuate_price = (private.price_per_gb * purchase.traffic) + (private.price_per_day * purchase.period)
+    calcuate_price = (settings.price_per_gb * purchase.traffic) + (settings.price_per_day * purchase.period)
     traffic_to_byte = int(purchase.traffic * (1024 ** 3))
     now = datetime.now(pytz.timezone('Asia/Tehran'))
     date_in_timestamp = (now + timedelta(days=purchase.period)).timestamp()
@@ -140,7 +141,7 @@ async def upgrade_service_for_user(db, purchase, amount):
         )
         await marzban_api.modify_user(main_server_ip, purchase.username, json_config)
 
-        calcuate_price = (private.price_per_gb * purchase.traffic) + (private.price_per_day * purchase.period)
+        calcuate_price = (settings.price_per_gb * purchase.traffic) + (settings.price_per_day * purchase.period)
 
         crud.update_purchase(
             db,
